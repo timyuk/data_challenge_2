@@ -2,23 +2,39 @@ import dash
 from dash import Dash, dcc, html, Input, Output, State
 import plotly.express as px
 import plotly.graph_objects as go
+import geopandas as gpd
 import pandas as pd
 
 app = Dash(__name__)
 
-# Load data with preprocessing
-df = pd.read_csv("PAS_2324.csv", low_memory=False)
+# Load PAS data with preprocessing
+df = pd.read_pickle(r"crime_data\PAS.pkl")
 df = df.loc[0:9311, ['Date', 'Borough', 'Measure', 'Proportion', 'MPS']]
-df['Date'] = pd.to_datetime(df['Date'])
+df['Date'] = pd.to_datetime(df['Date']).dt.date
 
+# Load GeoJSON data with preprocessing
+geojson = gpd.read_file(r'crime_data\merged_boroughs.geojson')
+geojson['name'] = geojson['name'].replace({"Westminster": "City of Westminster"})
+geojson = geojson[geojson['name'] != "City of London"]
+
+# Change df to fit heatmap formatting
 heatmap_df = df.pivot_table(index='Date', columns='Borough', values='Proportion', aggfunc='mean')
 
-# Create interactive plot
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
     html.H1("EDA for Data Challenge 2"),
     html.H2("PAS Data"),
+
+    # MAP for PAS data
+    dcc.Dropdown(
+        id='measure-dropdown2',
+        options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
+        value=df["Measure"].unique()[0],
+        clearable=False,
+        style={'width': '40%'}
+    ),
+    dcc.Graph(id="choropleth_map", style={'width': '80%'}),
 
     # Plots for each Measure's proportion by borough
     html.H3("Each Measure by Borough"),
@@ -60,7 +76,7 @@ app.layout = html.Div([
     ),
     dcc.Graph(id='main-plot2'),
 
-    # Heatmaps
+    # Heatmap
     dcc.Dropdown(
         id='heatmap-dropdown',
         options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
@@ -71,6 +87,30 @@ app.layout = html.Div([
     dcc.Graph(id='heatmap-plot')
 
 ])
+
+
+# Callback for the PAS map
+@app.callback(
+    Output('choropleth_map', 'figure'),
+    Input('measure-dropdown2', 'value')
+)
+def measure_at_time_map(selected_measure):
+    borough_data = df[(df["Measure"] == selected_measure)]
+
+    # Choropleth map with the boroughs
+    choropleth_map = px.choropleth(
+        borough_data,
+        geojson=geojson,
+        locations="Borough",
+        featureidkey="properties.name",
+        animation_frame='Date',
+        color="Proportion",
+        color_continuous_scale="RdBu",
+        title="Choropleth Map of London Boroughs"
+    )
+
+    choropleth_map.update_geos(fitbounds="locations", visible=False)
+    return choropleth_map
 
 
 # Callback for the select/deselect buttons
@@ -147,6 +187,7 @@ def update_plot(selected_measure, selected_boroughs):
     )
 
     fig.update_yaxes(range=[0, 1])
+    # fig.add_vline(x="2023-03-21", line_dash="dash")  # Line for release of  the "Casey Review"
 
     return fig
 
@@ -215,4 +256,4 @@ def update_heatmap(selected_measure):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
