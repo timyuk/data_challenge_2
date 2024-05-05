@@ -1,5 +1,6 @@
 import dash
 from dash import Dash, dcc, html, Input, Output, State
+import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
 import geopandas as gpd
@@ -20,73 +21,108 @@ geojson = geojson[geojson['name'] != "City of London"]
 # Change df to fit heatmap formatting
 heatmap_df = df.pivot_table(index='Date', columns='Borough', values='Proportion', aggfunc='mean')
 
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-app.layout = html.Div([
-    html.H1("EDA for Data Challenge 2"),
-    html.H2("PAS Data"),
+app.layout = dbc.Container([
 
-    # MAP for PAS data
-    dcc.Dropdown(
-        id='measure-dropdown2',
-        options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
-        value=df["Measure"].unique()[0],
-        clearable=False,
-        style={'width': '40%'}
-    ),
-    dcc.Graph(id="choropleth_map", style={'width': '80%'}),
+    # Headers
+    dbc.Row([
+        html.H1("EDA for Data Challenge 2")
+    ]),
+
+    # Two interactive maps next to each other
+    dbc.Row([
+        dbc.Col([
+            # MAP for PAS data
+            html.H3("London Boroughs PAS"),
+            dcc.Dropdown(
+                id='measure-dropdown2',
+                options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
+                value=df["Measure"].unique()[0],
+                clearable=False,
+                style={'width': '100%'}
+            ),
+            dcc.Graph(id="choropleth_map", style={'height': '450px', 'width': '100%'}),
+        ], width=5),
+
+        dbc.Col([
+            # MAP for crime data
+            html.H3("Crime near London"),
+            dcc.Dropdown(
+                id='crime-dropdown',
+                options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
+                value=df["Measure"].unique()[0],
+                clearable=False,
+                style={'width': '100%'}
+            ),
+            dcc.Graph(id="choropleth_map2", style={'height': '450px', 'width': '100%'}),
+        ], width=5),
+    ], justify="between"),
+
 
     # Plots for each Measure's proportion by borough
-    html.H3("Each Measure by Borough"),
-    dcc.Dropdown(
-        id='measure-dropdown',
-        options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
-        value=df["Measure"].unique()[0],
-        clearable=False,
-        style={'width': '40%'}
-    ),
-    html.Button("Select All", id="select-all-boroughs", n_clicks=0),
-    html.Button("Deselect All", id="deselect-all-boroughs", n_clicks=0),
-    dcc.Checklist(
-        id='borough-checklist',
-        options=[{'label': b, 'value': b} for b in df["Borough"].unique().tolist()],
-        value=df["Borough"].unique().tolist(),
-        inline=True,
-        style={'margin': '10px'}
-    ),
-    dcc.Graph(id='main-plot'),
-
-    # Plots for each borough's measures
-    html.H3("Each Borough by Measure"),
-    dcc.Dropdown(
-        id='borough-dropdown',
-        options=[{'label': b, 'value': b} for b in df["Borough"].unique().tolist()],
-        value=df["Borough"].unique()[0],
-        clearable=False,
-        style={'width': '40%'}
-    ),
-    html.Button("Select All", id="select-all-measures", n_clicks=0),
-    html.Button("Deselect All", id="deselect-all-measures", n_clicks=0),
-    dcc.Checklist(
-        id='measure-checklist',
-        options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
-        value=df["Measure"].unique().tolist(),
-        inline=True,
-        style={'margin': '10px'}
-    ),
-    dcc.Graph(id='main-plot2'),
+    dbc.Row([
+        html.H3("Each Measure by Borough"),
+        dcc.Dropdown(
+            id='measure-dropdown',
+            options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
+            value=df["Measure"].unique()[0],
+            clearable=False,
+            style={'width': '40%'}
+        ),
+    ]),
+    dbc.Row([
+        html.Button("Select All", id="select-all-boroughs", n_clicks=0, style={'width': '50%'}),
+        html.Button("Deselect All", id="deselect-all-boroughs", n_clicks=0, style={'width': '50%'}),
+        dcc.Checklist(
+            id='borough-checklist',
+            options=[{'label': " " + b + "   ", 'value': b} for b in df["Borough"].unique().tolist()],
+            value=df["Borough"].unique().tolist(),
+            inline=True,
+            style={'margin': '10px'}
+        ),
+        dcc.Graph(id='main-plot'),
+    ]),
 
     # Heatmap
-    dcc.Dropdown(
-        id='heatmap-dropdown',
-        options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
-        value=df["Measure"].unique()[0],
-        clearable=False,
-        style={'width': '40%'}
-    ),
-    dcc.Graph(id='heatmap-plot')
+    dbc.Row([
+        dcc.Dropdown(
+            id='heatmap-dropdown',
+            options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
+            value=df["Measure"].unique()[0],
+            clearable=False,
+            style={'width': '40%'}
+        ),
+        dcc.Graph(id='heatmap-plot')
+    ]),
 
-])
+    # Plots for each borough's measures
+    dbc.Row([
+        html.H3("Each Borough by Measure"),
+        dcc.Dropdown(
+            id='borough-dropdown',
+            options=[{'label': b, 'value': b} for b in df["Borough"].unique().tolist()],
+            value=df["Borough"].unique()[0],
+            clearable=False,
+            style={'width': '40%'}
+        ),
+    ]),
+
+    dbc.Row([
+        html.Button("Select All", id="select-all-measures", n_clicks=0, style={'width': '50%'}),
+        html.Button("Deselect All", id="deselect-all-measures", n_clicks=0, style={'width': '50%'}),
+        dcc.Checklist(
+            id='measure-checklist',
+            options=[{'label': " " + m + "   ", 'value': m} for m in df["Measure"].unique().tolist()],
+            value=df["Measure"].unique().tolist(),
+            inline=True,
+            style={'margin': '10px'}
+        ),
+        dcc.Graph(id='main-plot2'),
+    ]),
+
+
+], fluid=True)
 
 
 # Callback for the PAS map
@@ -105,10 +141,10 @@ def measure_at_time_map(selected_measure):
         featureidkey="properties.name",
         animation_frame='Date',
         color="Proportion",
-        color_continuous_scale="RdBu",
-        title="Choropleth Map of London Boroughs"
+        color_continuous_scale="RdBu"
     )
 
+    choropleth_map.update_layout(geo={"projection": {"type": "natural earth"}})#, margin={"r": 0, "t": 0, "l": 0, "b": 0})
     choropleth_map.update_geos(fitbounds="locations", visible=False)
     return choropleth_map
 
