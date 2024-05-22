@@ -1,4 +1,4 @@
-LookUp_BoroughName,MajorText,MinorText,Date,Homicide_Counts
+Borough,MajorText,MinorText,Date,Homicide_Counts
 Barking and Dagenham,Violence Against the Person,Homicide,2010-04-01,0
 Barnet,Violence Against the Person,Homicide,2010-04-01,0
 Bexley,Violence Against the Person,Homicide,2010-04-01,0
