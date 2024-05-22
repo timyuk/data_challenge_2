@@ -8,12 +8,12 @@ import pandas as pd
 app = Dash(__name__)
 
 # Load PAS data with preprocessing
-df = pd.read_pickle(r"crime_data\PAS.pkl")
+df = pd.read_pickle(r"crime_data/PAS.pkl")
 df = df.loc[0:9311, ['Date', 'Borough', 'Measure', 'Proportion', 'MPS']]
 df['Date'] = pd.to_datetime(df['Date']).dt.date
 
 # Load GeoJSON data with preprocessing
-geojson = gpd.read_file(r'crime_data\merged_boroughs.geojson')
+geojson = gpd.read_file(r'crime_data/merged_boroughs.geojson')
 geojson['name'] = geojson['name'].replace({"Westminster": "City of Westminster"})
 geojson = geojson[geojson['name'] != "City of London"]
 
