@@ -6,18 +6,46 @@ import plotly.graph_objects as go
 import geopandas as gpd
 import pandas as pd
 
-app = Dash(__name__)
-
 # Load PAS data with preprocessing
 df = pd.read_pickle(r"crime_data\PAS.pkl")
 df = df.loc[0:9311, ['Date', 'Borough', 'Measure', 'Proportion', 'MPS']]
 df['Date'] = pd.to_datetime(df['Date']).dt.date
+df = df.loc[(df['Year-Month'] <= '2020-01-01') & (df['Year-Month'] >= '2015-03-31')].copy()
 
-# Load GeoJSON data with preprocessing
+# Load detailed PAS data for ward-level analysis and questions
+df_ward = pd.read_pickle(r"crime_data\PAS_ward.pkl")
+df_ward['Year-Month'] = pd.to_datetime(df_ward['Year-Month']).dt.date
+df_ward.rename(columns={'Year-Month': 'Date'}, inplace=True)
+
+# Load GeoJSON data for boroughs with preprocessing
 geojson = gpd.read_file(r'crime_data\merged_boroughs.geojson')
 geojson['name'] = geojson['name'].replace({"Westminster": "City of Westminster"})
 geojson = geojson[geojson['name'] != "City of London"]
 
+# Load GeoJSON data for wards
+geojson_wards = gpd.read_file(r'crime_data\wards.geojson')
+
+# PROOF THAT WE NEED A DIFFERENT GEOJSON WARDS FILE
+# list1 = geojson_wards["name"].tolist()
+# list2 = df_ward["ward_n"].unique().tolist()
+#
+# set1 = set(list1)
+# set2 = set(list2)
+#
+# # Find elements in list1 but not in list2
+# difference1 = set1 - set2
+# # Find elements in list2 but not in list1
+# difference2 = set2 - set1
+#
+# # Convert the sets back to lists if needed
+# difference1_list = list(difference1)
+# difference2_list = list(difference2)
+#
+# # Output the results
+# print("Elements in list1 but not in list2:", difference1_list)
+# print("Elements in list2 but not in list1:", difference2_list)
+
+# THE DASH APP
 # Change df to fit heatmap formatting
 heatmap_df = df.pivot_table(index='Date', columns='Borough', values='Proportion', aggfunc='mean')
 
@@ -46,19 +74,18 @@ app.layout = dbc.Container([
         ], width=5),
 
         dbc.Col([
-            # MAP for crime data
-            html.H3("Crime near London"),
+            # MAP for ward data
+            html.H3("London Wards PAS"),
             dcc.Dropdown(
-                id='crime-dropdown',
-                options=[{'label': m, 'value': m} for m in df["Measure"].unique().tolist()],
-                value=df["Measure"].unique()[0],
+                id='measure-dropdown3',
+                options=[{'label': m, 'value': m} for m in df_ward["Measure"].unique().tolist()],
+                value=df_ward["Measure"].unique()[0],
                 clearable=False,
                 style={'width': '100%'}
             ),
             dcc.Graph(id="choropleth_map2", style={'height': '450px', 'width': '100%'}),
         ], width=5),
     ], justify="between"),
-
 
     # Plots for each Measure's proportion by borough
     dbc.Row([
@@ -121,11 +148,10 @@ app.layout = dbc.Container([
         dcc.Graph(id='main-plot2'),
     ]),
 
-
 ], fluid=True)
 
 
-# Callback for the PAS map
+# Callback for the PAS borough map
 @app.callback(
     Output('choropleth_map', 'figure'),
     Input('measure-dropdown2', 'value')
@@ -144,7 +170,33 @@ def measure_at_time_map(selected_measure):
         color_continuous_scale="RdBu"
     )
 
-    choropleth_map.update_layout(geo={"projection": {"type": "natural earth"}})#, margin={"r": 0, "t": 0, "l": 0, "b": 0})
+    choropleth_map.update_layout(geo={"projection": {"type": "natural earth"}})
+    choropleth_map.update_geos(fitbounds="locations", visible=False)
+    return choropleth_map
+
+
+# Callback for the PAS ward map
+@app.callback(
+    Output('choropleth_map2', 'figure'),
+    Input('measure-dropdown3', 'value')
+)
+def measure_at_time_ward(selected_measure1):
+    print(df_ward["Measure"].head())
+    ward_data = df_ward[(df_ward["Measure"] == selected_measure1)]
+    print(ward_data)
+
+    # Choropleth map with the wards
+    choropleth_map = px.choropleth(
+        ward_data,
+        geojson=geojson_wards,
+        locations="ward_n",
+        featureidkey="features.properties.name",
+        animation_frame='Date',
+        color="Proportion",
+        color_continuous_scale="RdBu"
+    )
+
+    choropleth_map.update_layout(geo={"projection": {"type": "natural earth"}})
     choropleth_map.update_geos(fitbounds="locations", visible=False)
     return choropleth_map
 
@@ -291,5 +343,5 @@ def update_heatmap(selected_measure):
     return fig
 
 
-if __name__ == '__main__':
-    app.run_server(debug=False)
+# if __name__ == '__main__':
+#     app.run_server(debug=False)
