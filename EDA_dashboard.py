@@ -7,23 +7,23 @@ import geopandas as gpd
 import pandas as pd
 
 # Load PAS data with preprocessing
-df = pd.read_pickle(r"crime_data\PAS.pkl")
+df = pd.read_pickle(r"crime_data/PAS.pkl")
 df = df.loc[0:9311, ['Date', 'Borough', 'Measure', 'Proportion', 'MPS']]
 df['Date'] = pd.to_datetime(df['Date']).dt.date
 df = df.loc[(df['Year-Month'] <= '2020-01-01') & (df['Year-Month'] >= '2015-03-31')].copy()
 
 # Load detailed PAS data for ward-level analysis and questions
-df_ward = pd.read_pickle(r"crime_data\PAS_ward.pkl")
+df_ward = pd.read_pickle(r"crime_data/PAS_ward.pkl")
 df_ward['Year-Month'] = pd.to_datetime(df_ward['Year-Month']).dt.date
 df_ward.rename(columns={'Year-Month': 'Date'}, inplace=True)
 
 # Load GeoJSON data for boroughs with preprocessing
-geojson = gpd.read_file(r'crime_data\merged_boroughs.geojson')
+geojson = gpd.read_file(r'crime_data/merged_boroughs.geojson')
 geojson['name'] = geojson['name'].replace({"Westminster": "City of Westminster"})
 geojson = geojson[geojson['name'] != "City of London"]
 
 # Load GeoJSON data for wards
-geojson_wards = gpd.read_file(r'crime_data\wards.geojson')
+geojson_wards = gpd.read_file(r'crime_data/wards.geojson')
 
 # PROOF THAT WE NEED A DIFFERENT GEOJSON WARDS FILE
 # list1 = geojson_wards["name"].tolist()
