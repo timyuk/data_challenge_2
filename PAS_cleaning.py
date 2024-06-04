@@ -35,9 +35,9 @@ def pre_process(df_og, df_stats):
 
     # Dropping columns with too little variety in answers
     df = df.replace({'-': np.nan, 'Not Asked': np.nan, 'Not asked': np.nan, 'Don\'t know': np.nan})
-    for col in df.columns:
-        if len(df[col].unique()) == 1 or len(df[col].unique()) == 2:
-            df.drop(col, inplace=True, axis=1)
+    # for col in df.columns:
+    #     if len(df[col].unique()) == 1 or len(df[col].unique()) == 2:
+    #         df.drop(col, inplace=True, axis=1)
 
     # Adding ISO week numbers
     df["Week"] = pd.to_datetime(df["Week"].str.split("-", expand=True)[0], format="%d/%m/%Y").dt.isocalendar().week
@@ -94,7 +94,8 @@ def get_questions(df_new, df_stats):
     df_list = df_new.columns.tolist()
 
     # List with open answer questions (or loop questions)
-    multi_q = ["Q143", "PQ135", "NQ147", "Q145", "Q155", "Q154", "Q147", "Q136", "Q150", "Q139", "Q135", "Q61", "Q149"]
+    multi_q = ["Q143", "PQ135", "NQ147", "Q145", "Q155", "Q154", "Q147", "Q136", "Q150", "Q139", "Q135", "Q61", "Q149",
+               "Q109", "Q190", "Q98" "Q79"]
     multi_qs = []
 
     for q in multi_q:
@@ -105,7 +106,8 @@ def get_questions(df_new, df_stats):
     questions = [
         "NQ146", "Q144", "Q141", "Q62A", "Q62E", "Q62TG", "Q62C", "NQ135BD", "Q60", "NQ133A", "Q131",
         "Q79B", "Q79D", "Q79E", "Q79J", "Q79I", "Q79G", "Q65", "Q79C", "NQ21", "RQ80E", "NQ143", "NNQ27C", "Q13",
-        "NNQ27E", "Q37", "Q39A_2", "NQ43", "NQ44A", "NQ45A", "Q15", "Q62F", "Q62H", "Q62TJ"
+        "NNQ27E", "Q37", "Q39A_2", "NQ43", "NQ44A", "NQ45A", "Q15", "Q62F", "Q62H", "Q62TJ", "BQ90D", "BQ90DA", "XQ145",
+        "NQ1I"
     ]
 
     # Extra df info questions
@@ -150,14 +152,25 @@ def get_questions(df_new, df_stats):
     return df
 
 
-# # Load data and limit to 2019
-# df_og = pd.read_pickle(r'crime_data\PAS_detailed.pkl')
-# df_og['Year-Month'] = pd.to_datetime(df_og['Year-Month'], format='%Y-%m-%d')
-# df_new = df_og.loc[df_og['Year-Month'] <= '2020-01-01'].copy()
-# df = get_questions(df_new, False)
+# # Load data
+df_og = pd.read_pickle(r'crime_data\PAS_detailed.pkl')
+df_og['Year-Month'] = pd.to_datetime(df_og['Year-Month'], format='%Y-%m-%d')
+
+
+# Combining question (who did you report a crime to) answers
+under_q = ['SQ109CAA', 'SQ109CAB', 'SQ109CAC', 'SQ109CAD', 'SQ109CAE', 'SQ109CAF']
+result = df_og[under_q[0]].combine_first(df_og[under_q[1]])
+result1 = result.combine_first(df_og[under_q[2]])
+result2 = result1.combine_first(df_og[under_q[3]])
+result3 = result2.combine_first(df_og[under_q[4]])
+result4 = result3.combine_first(df_og[under_q[5]])
+
+df_og["SQ109CAA"] = result4
+df_og.drop(['SQ109CAB', 'SQ109CAC', 'SQ109CAD', 'SQ109CAE', 'SQ109CAF'], inplace=True, axis=1)
+
 
 # # Save cleaned file as a pickle file
-# df.to_pickle(r"crime_data\PAS_detailed2.pkl")
+# df_og.to_pickle(r"crime_data\PAS_detailed2.pkl")
 
 # MEASURES DATAFRAME
 # Load and create dataframes with preprocessing
