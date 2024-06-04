@@ -95,7 +95,7 @@ def get_questions(df_new, df_stats):
 
     # List with open answer questions (or loop questions)
     multi_q = ["Q143", "PQ135", "NQ147", "Q145", "Q155", "Q154", "Q147", "Q136", "Q150", "Q139", "Q135", "Q61", "Q149",
-               "Q109", "Q190", "Q98" "Q79", "Q191", "Q192", "Q119", "NQ1"]
+               "Q109", "Q190", "Q98" "Q79", "Q191", "Q192", "Q119", "NQ1", "Q90"]
     multi_qs = []
 
     for q in multi_q:
@@ -106,8 +106,7 @@ def get_questions(df_new, df_stats):
     questions = [
         "NQ146", "Q144", "Q141", "Q62A", "Q62E", "Q62TG", "Q62C", "NQ135BD", "Q60", "NQ133A", "Q131",
         "Q79B", "Q79D", "Q79E", "Q79J", "Q79I", "Q79G", "Q65", "Q79C", "NQ21", "RQ80E", "NQ143", "NNQ27C", "Q13",
-        "NNQ27E", "Q37", "Q39A_2", "NQ43", "NQ44A", "NQ45A", "Q15", "Q62F", "Q62H", "Q62TJ", "BQ90D", "BQ90DA", "XQ145",
-        "Q201H"
+        "NNQ27E", "Q37", "Q39A_2", "NQ43", "NQ44A", "NQ45A", "Q15", "Q62F", "Q62H", "Q62TJ", "XQ145", "Q201H"
     ]
 
     # Extra df info questions
@@ -168,8 +167,7 @@ result4 = result3.combine_first(df_og[under_q[5]])
 df_og["SQ109CAA"] = result4
 df_og.drop(['SQ109CAB', 'SQ109CAC', 'SQ109CAD', 'SQ109CAE', 'SQ109CAF'], inplace=True, axis=1)
 
-
-# # Save cleaned file as a pickle file
+# Save cleaned file as a pickle file
 df_og.to_pickle(r"crime_data\PAS_detailed2.pkl")
 
 # MEASURES DATAFRAME
