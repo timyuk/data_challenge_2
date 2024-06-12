@@ -4,6 +4,31 @@ import numpy as np
 import os
 import pickle
 import re
+import requests
+
+
+# CREATE merged_PAS file of detailed
+def create_merged_PAS():
+    """Creates merged PAS file of detailed PAS data"""
+    directory = r'crime_data/'  # Replace with your directory path
+    dfs = []
+
+    for filename in os.listdir(directory):
+        if filename.endswith('.csv'):
+            filepath = os.path.join(directory, filename)
+            df = pd.read_csv(filepath)
+            dfs.append(df)
+
+    # Concatenate all dataframes in the list
+    merged_df = pd.concat(dfs, ignore_index=True)
+
+    # Save the merged DataFrame to a PKL file
+    output_file = r'crime_data/merged_PAS.pkl'
+    merged_df.to_pickle(output_file)
+    print(f"Merged DataFrame saved to {output_file}")
+
+
+# create_merged_PAS()  # <-- uncomment to create file
 
 
 # PREPROCESSING
@@ -72,11 +97,6 @@ def pre_process(df_og, df_stats):
     return df2
 
 
-# # Save cleaned file as a pickle file
-# og_data = pd.read_pickle(r'crime_data\merged_PAS.pkl')
-# df2 = pre_process(og_data, False)
-# df2.to_pickle(r"crime_data\PAS_detailed.pkl")
-
 # PICKING QUESTIONS
 # Function to handle different column types
 def get_unique_values(column):
@@ -94,7 +114,7 @@ def get_questions(df_new, df_stats):
     df_list = df_new.columns.tolist()
 
     # List with open answer questions (or loop questions)
-    multi_q = ["Q143", "PQ135", "NQ147", "Q145", "Q155", "Q154", "Q147", "Q136", "Q150", "Q139", "Q135", "Q61", "Q149",
+    multi_q = ["Q143", "PQ135", "Q147", "Q145", "Q155", "Q154", "Q147", "Q136", "Q150", "Q139", "Q135", "Q61", "Q149",
                "Q109", "Q190", "Q98" "Q79", "Q191", "Q192", "Q119", "NQ1", "Q90"]
     multi_qs = []
 
@@ -151,10 +171,10 @@ def get_questions(df_new, df_stats):
     return df
 
 
-# # Load data
-df_og = pd.read_pickle(r'crime_data\PAS_detailed.pkl')
+# Save cleaned file as a pickle file
+og_data = pd.read_pickle(r'crime_data\merged_PAS.pkl')
+df_og = pre_process(og_data, False)
 df_og['Year-Month'] = pd.to_datetime(df_og['Year-Month'], format='%Y-%m-%d')
-
 
 # Combining question (who did you report a crime to) answers
 under_q = ['SQ109CAA', 'SQ109CAB', 'SQ109CAC', 'SQ109CAD', 'SQ109CAE', 'SQ109CAF']
@@ -167,103 +187,110 @@ result4 = result3.combine_first(df_og[under_q[5]])
 df_og["SQ109CAA"] = result4
 df_og.drop(['SQ109CAB', 'SQ109CAC', 'SQ109CAD', 'SQ109CAE', 'SQ109CAF'], inplace=True, axis=1)
 
+
+# Fix missing boroughs in final dataset
+def fix_boroughs(PAS_detailed):
+    """Fix missing boroughs"""
+
+    ward_borough_old = {}
+    for i, ward in enumerate(PAS_detailed['ward'].unique().tolist()):
+        print(i)  # print to check each ward
+        borough = requests.get(f'https://findthatpostcode.uk/areas/{ward}.json').json()['data']['attributes']['parent']
+        ward_borough_old[ward] = borough
+    PAS_detailed['Borough'] = PAS_detailed['ward'].apply(lambda x: ward_borough_old[x])
+    PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+
+    borough_name = {}
+    for i, borough in enumerate(PAS_detailed['Borough'].unique().tolist()):
+        print(i)  # print to check each borough
+        borough_name = requests.get(f'https://findthatpostcode.uk/areas/{borough}.json').json()['data']['attributes'][
+            'name']
+        ward_borough_old[borough] = borough_name
+    PAS_detailed['Borough name'] = PAS_detailed['Borough'].apply(lambda x: ward_borough_old[x])
+    PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+
+
 # Save cleaned file as a pickle file
-df_og.to_pickle(r"crime_data\PAS_detailed2.pkl")
+df_fin = fix_boroughs(df_og)
+df_og.to_pickle(r"crime_data\PAS_detailed2_fixed_borough.pkl")
 
-# MEASURES DATAFRAME
-# Load and create dataframes with preprocessing
-df = pd.read_pickle(r'crime_data\PAS_detailed2.pkl')
-
-# Ward-level PAS data
-df_measures = df[["Year-Month", "Borough", "ward_n", "Q62A", "Q62E", "Q62TG", "Q62C", "Q60", "Q131", "NQ135BD",
-                  "NQ133A"]].copy()
-df_measures = df_measures.replace({'#N/A': np.nan, '': np.nan, 'Westminster': "City of Westminster"})
-df_measures = df_measures[~df_measures["Borough"].isna()]
-
-# Mappings for calculations
-mappings = {
-    'Tend to agree': 1,
-    'Strongly agree': 1,
-    'Neither agree nor disagree': 0,
-    'Tend to disagree': 0,
-    'Strongly disagree': 0
-}
-
-mappings2 = {
-    'Excellent': 1,
-    'Good': 1,
-    'Fair': 0,
-    'Poor': 0,
-    'Very poor': 0
-}
-
-mappings3 = {
-    'Yes': 1,
-    'No': 0
-}
-
-mappings4 = {
-    'Very well informed': 1,
-    'Fairly well informed': 1,
-    'Not at all informed': 0
-}
-
-# Converting measure columns for calculations
-df_measures["Q62A"] = df_measures["Q62A"].map(mappings)
-df_measures["Q62E"] = df_measures["Q62E"].map(mappings)
-df_measures["Q62TG"] = df_measures["Q62TG"].map(mappings)
-df_measures["Q62C"] = df_measures["Q62C"].map(mappings)
-df_measures["NQ135BD"] = df_measures["NQ135BD"].map(mappings)
-df_measures["Q60"] = df_measures["Q60"].map(mappings2)
-df_measures["NQ133A"] = df_measures["NQ133A"].map(mappings3)
-df_measures["Q131"] = df_measures["Q131"].map(mappings4)
-
-
-def calc_wards(df3, questions):
-    results = []
-    for q in questions:
-        for b in df3["Borough"].unique():
-            borough_df = df3[["Year-Month", "Borough", "ward_n", q]][df3["Borough"] == b]
-
-            for w in borough_df["ward_n"].unique():
-                ward_df = borough_df[borough_df["ward_n"] == w]
-                perc = ward_df[q].sum() / ward_df.shape[0]
-                results.append({
-                    "Year-Month": ward_df["Year-Month"].iloc[0],
-                    "Borough": b,
-                    "ward_n": w,
-                    "Measure": q,
-                    "Proportion": perc
-                })
-
-    # Dataframe to return
-    result_df = pd.DataFrame(results)
-    return result_df
-
-
-# Getting ward level measure values
-questions = ["Q62A", "Q62E", "Q62TG", "Q62C", "NQ135BD", "Q60", "Q131", "NQ133A"]
-result_df = calc_wards(df_measures, questions)
-
-# Renaming questions to their measure names
-result_df["Measure"] = result_df["Measure"].map({
-    "Q62A": "Relied on to be there",
-    "Q62E": "Understand issues",
-    "Q62TG": "Listen to concerns",
-    "Q62C": "Treat everyone fairly",
-    "NQ135BD": "Trust MPS",
-    "Q60": "'Good job' local",
-    "NQ133A": "Contact ward officer",
-    "Q131": "Informed local"
-})
-
-# # Save cleaned file as a pickle file
-# result_df.to_pickle(r"crime_data\PAS_ward.pkl")
-
-
-
-# RENAMING EACH QUESTION
-# questions_dict = {
+# # MEASURES DATAFRAME
+# # Load and create dataframes with preprocessing
+# df = pd.read_pickle(r'crime_data\PAS_detailed2.pkl')
+#
+# # Ward-level PAS data
+# df_measures = df[["Year-Month", "Borough", "ward_n", "Q62A", "Q62E", "Q62TG", "Q62C", "Q60", "Q131", "NQ135BD",
+#                   "NQ133A"]].copy()
+# df_measures = df_measures.replace({'#N/A': np.nan, '': np.nan, 'Westminster': "City of Westminster"})
+# df_measures = df_measures[~df_measures["Borough"].isna()]
+#
+# # Mappings for calculations
+# mappings = {
+#     'Tend to agree': 1,
+#     'Strongly agree': 1,
+#     'Neither agree nor disagree': 0,
+#     'Tend to disagree': 0,
+#     'Strongly disagree': 0
+# }
+#
+# mappings2 = {
+#     'Excellent': 1,
+#     'Good': 1,
+#     'Fair': 0,
+#     'Poor': 0,
+#     'Very poor': 0
+# }
+#
+# mappings3 = {
+#     'Yes': 1,
+#     'No': 0
+# }
+#
+# mappings4 = {
+#     'Very well informed': 1,
+#     'Fairly well informed': 1,
+#     'Not at all informed': 0
+# }
+#
+# # Converting measure columns for calculations
+# df_measures["Q62A"] = df_measures["Q62A"].map(mappings)
+# df_measures["Q62E"] = df_measures["Q62E"].map(mappings)
+# df_measures["Q62TG"] = df_measures["Q62TG"].map(mappings)
+# df_measures["Q62C"] = df_measures["Q62C"].map(mappings)
+# df_measures["NQ135BD"] = df_measures["NQ135BD"].map(mappings)
+# df_measures["Q60"] = df_measures["Q60"].map(mappings2)
+# df_measures["NQ133A"] = df_measures["NQ133A"].map(mappings3)
+# df_measures["Q131"] = df_measures["Q131"].map(mappings4)
+#
+#
+# def calc_wards(df3, questions):
+#     results = []
+#     for q in questions:
+#         for b in df3["Borough"].unique():
+#             borough_df = df3[["Year-Month", "Borough", "ward_n", q]][df3["Borough"] == b]
+#
+#             for w in borough_df["ward_n"].unique():
+#                 ward_df = borough_df[borough_df["ward_n"] == w]
+#                 perc = ward_df[q].sum() / ward_df.shape[0]
+#                 results.append({
+#                     "Year-Month": ward_df["Year-Month"].iloc[0],
+#                     "Borough": b,
+#                     "ward_n": w,
+#                     "Measure": q,
+#                     "Proportion": perc
+#                 })
+#
+#     # Dataframe to return
+#     result_df = pd.DataFrame(results)
+#     return result_df
+#
+#
+# # Getting ward level measure values
+# questions = ["Q62A", "Q62E", "Q62TG", "Q62C", "NQ135BD", "Q60", "Q131", "NQ133A"]
+# result_df = calc_wards(df_measures, questions)
+#
+# # Renaming questions to their measure names
+# result_df["Measure"] = result_df["Measure"].map({
 #     "Q62A": "Relied on to be there",
 #     "Q62E": "Understand issues",
 #     "Q62TG": "Listen to concerns",
@@ -271,66 +298,8 @@ result_df["Measure"] = result_df["Measure"].map({
 #     "NQ135BD": "Trust MPS",
 #     "Q60": "'Good job' local",
 #     "NQ133A": "Contact ward officer",
-#     "Q131": "Informed local",
-#     "NQ146": "Highest level of qualification",
-#     "Q144": "Renting, mortgage, own your home",
-#     "Q141": "Number adults in household",
-#     "Q136r": "Age band",
-#     "Q139r": "Current Employment status",
-#     "Q150r": "Sexual orientation",
-#     "XQ135r": "Gender",
-#     "Q79B": "Responding to emergencies promptly",
-#     "Q79D": "Tackling gun crime",
-#     "Q79E": "Supporting victims and witnesses",
-#     "Q79J": "Tackling VAWG",
-#     "Q79I": "Tackling hate crime",
-#     "Q79G": "Tackling drug dealing and use",
-#     "Q65": "Local patrols on bike or by foot",
-#     "Q79C": "Good patrolling presence?",
-#     "NQ21": "Safeness around patrolling officer?",
-#     "RQ80E": "Heard about your local Policing Team?",
-#     "NQ143": "Considered a career in the Met?",
-#     "NNQ27E": "violence problem?",
-#     "Q37": "gun crime problem",
-#     "Q39A_2": "gangs problem",
-#     "NQ43": "knife crime problem",
-#     "NQ44A": "hate crime problem",
-#     "NQ45A": "cyber crime problem",
-#     "Q15": "ABS problem",
-#     "Q62F": "Deal with things that matter to community",
-#     "Q62H": "Police are helpful",
-#     "Q62TJ": "Police are easy to contact"
-# }
-
-# list1 = list(questions_dict.keys())
-# list1 = df.columns.tolist()
-# # print(list(list1))
-# list2 = [
-#     "Q62A", "Q62E", "Q62TG", "Q62C", "Q60",
-#     "Q62A", "Q62E", "Q62TG", "Q62C", "NQ135BD", "Q60", "NQ133A", "Q131",
-#     "Q62A", "Q62E", "Q62TG", "Q62C", "NQ135BD", "Q60", "NQ133A", "Q131",
-#     "XQ145", "NQ147", "Q155", "Q154", "NQ146", "UQ147", "Q136r", "Q139r", "Q144", "Q150r",
-#     "NQ149", "Q141", "XQ135r", "Q79B", "Q79D", "Q79E", "Q79J", "Q79I", "Q79G", "Q65",
-#     "Q79C", "NQ21", "RQ80E", "Q143", "NQ143", "NNQ27C", "Q13", "NNQ27E", "Q37", "Q39A_2",
-#     "NQ43", "NQ44A", "NQ45A", "Q15", "PQ135", "Q62F", "Q62H", "Q62TJ"
-# ]
+#     "Q131": "Informed local"
+# })
 #
-#
-# # Convert the lists to sets
-# set1 = set(list1)
-# set2 = set(list2)
-#
-# # Find elements in list1 but not in list2
-# difference1 = set1 - set2
-# # Find elements in list2 but not in list1
-# difference2 = set2 - set1
-#
-# # Convert the sets back to lists if needed
-# difference1_list = list(difference1)
-# difference2_list = list(difference2)
-#
-# # Output the results
-# print("Elements in list1 but not in list2:", difference1_list)
-# print("Elements in list2 but not in list1:", difference2_list)
-
-# ============================================================
+# # # Save cleaned file as a pickle file
+# # result_df.to_pickle(r"crime_data\PAS_ward.pkl")
