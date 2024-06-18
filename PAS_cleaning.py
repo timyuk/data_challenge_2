@@ -1,3 +1,5 @@
+import json
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -5,20 +7,23 @@ import os
 import pickle
 import re
 import requests
+import sys
 
-
+PAS_detailed_names = ['PAS_ward_level_FY_15_17.csv', 'PAS_ward_level_FY_17_18.csv', 'PAS_ward_level_FY_18_19.csv', 'PAS_ward_level_FY_19_20.csv', 'PAS_ward_level_FY_20_21.csv']
 # CREATE merged_PAS file of detailed
 def create_merged_PAS():
     """Creates merged PAS file of detailed PAS data"""
     directory = r'crime_data/'  # Replace with your directory path
     dfs = []
-
+    check_which_missing = PAS_detailed_names.copy()
     for filename in os.listdir(directory):
-        if filename.endswith('.csv'):
+        if filename in PAS_detailed_names:
+            check_which_missing.remove(filename)
             filepath = os.path.join(directory, filename)
             df = pd.read_csv(filepath)
             dfs.append(df)
-
+    if check_which_missing:
+        print(f'Missing PAS ward level files: {", ".join(check_which_missing)}')
     # Concatenate all dataframes in the list
     merged_df = pd.concat(dfs, ignore_index=True)
 
@@ -28,7 +33,7 @@ def create_merged_PAS():
     print(f"Merged DataFrame saved to {output_file}")
 
 
-# create_merged_PAS()  # <-- uncomment to create file
+create_merged_PAS()  # <-- uncomment to create file
 
 
 # PREPROCESSING
@@ -172,7 +177,11 @@ def get_questions(df_new, df_stats):
 
 
 # Save cleaned file as a pickle file
-og_data = pd.read_pickle(r'crime_data\merged_PAS.pkl')
+try:
+    og_data = pd.read_pickle(r'crime_data\merged_PAS.pkl')
+except FileNotFoundError:
+    print('File "merged_PAS.pkl" was not found, uncomment line 32 to create this file')
+    sys.exit(1)
 df_og = pre_process(og_data, False)
 df_og['Year-Month'] = pd.to_datetime(df_og['Year-Month'], format='%Y-%m-%d')
 
@@ -200,18 +209,33 @@ def fix_boroughs(PAS_detailed):
     PAS_detailed['Borough'] = PAS_detailed['ward'].apply(lambda x: ward_borough_old[x])
     PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
 
-    borough_name = {}
+    borough_name_dict = {}
     for i, borough in enumerate(PAS_detailed['Borough'].unique().tolist()):
         print(i)  # print to check each borough
         borough_name = requests.get(f'https://findthatpostcode.uk/areas/{borough}.json').json()['data']['attributes'][
             'name']
-        ward_borough_old[borough] = borough_name
-    PAS_detailed['Borough name'] = PAS_detailed['Borough'].apply(lambda x: ward_borough_old[x])
+        borough_name_dict[borough] = borough_name
+    PAS_detailed['Borough name'] = PAS_detailed['Borough'].apply(lambda x: borough_name_dict[x])
+    PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+
+# Fix missing boroughs in final dataset without api
+def fix_boroughs_without_api(PAS_detailed):
+    """Fix missing boroughs"""
+
+    with open("instead_of_api/ward_borough_old.json", "r") as file:
+        ward_borough_old = json.load(file)
+    PAS_detailed['Borough'] = PAS_detailed['ward'].apply(lambda x: ward_borough_old[x])
+    PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+
+    with open("instead_of_api/borough_name.json", "r") as file:
+        borough_name_dict = json.load(file)
+    PAS_detailed['Borough name'] = PAS_detailed['Borough'].apply(lambda x: borough_name_dict[x])
     PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
 
 
 # Save cleaned file as a pickle file
-df_fin = fix_boroughs(df_og)
+# df_fin = fix_boroughs(df_og)
+df_fin = fix_boroughs_without_api(df_og)
 df_og.to_pickle(r"crime_data\PAS_detailed2_fixed_borough.pkl")
 
 # # MEASURES DATAFRAME
