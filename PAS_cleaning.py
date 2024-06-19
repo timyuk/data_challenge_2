@@ -24,6 +24,10 @@ def create_merged_PAS():
             dfs.append(df)
     if check_which_missing:
         print(f'Missing PAS ward level files: {", ".join(check_which_missing)}')
+    if check_which_missing == PAS_detailed_names:
+        print(f'\nThere are no PAS ward level files in the data folder, they should have names as provided in the above message')
+        sys.exit(1)
+
     # Concatenate all dataframes in the list
     merged_df = pd.concat(dfs, ignore_index=True)
 
@@ -207,7 +211,7 @@ def fix_boroughs(PAS_detailed):
         borough = requests.get(f'https://findthatpostcode.uk/areas/{ward}.json').json()['data']['attributes']['parent']
         ward_borough_old[ward] = borough
     PAS_detailed['Borough'] = PAS_detailed['ward'].apply(lambda x: ward_borough_old[x])
-    PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+    # PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
 
     borough_name_dict = {}
     for i, borough in enumerate(PAS_detailed['Borough'].unique().tolist()):
@@ -216,7 +220,8 @@ def fix_boroughs(PAS_detailed):
             'name']
         borough_name_dict[borough] = borough_name
     PAS_detailed['Borough name'] = PAS_detailed['Borough'].apply(lambda x: borough_name_dict[x])
-    PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+    # PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+    return PAS_detailed
 
 # Fix missing boroughs in final dataset without api
 def fix_boroughs_without_api(PAS_detailed):
@@ -225,13 +230,13 @@ def fix_boroughs_without_api(PAS_detailed):
     with open("instead_of_api/ward_borough_old.json", "r") as file:
         ward_borough_old = json.load(file)
     PAS_detailed['Borough'] = PAS_detailed['ward'].apply(lambda x: ward_borough_old[x])
-    PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+    # PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
 
     with open("instead_of_api/borough_name.json", "r") as file:
         borough_name_dict = json.load(file)
     PAS_detailed['Borough name'] = PAS_detailed['Borough'].apply(lambda x: borough_name_dict[x])
-    PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
-
+    # PAS_detailed.to_pickle('PAS_detailed2_fixed_borough.pkl')
+    return PAS_detailed
 
 # Save cleaned file as a pickle file
 # df_fin = fix_boroughs(df_og)
