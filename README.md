@@ -21,7 +21,7 @@ mkdir data
 Download the combined street-level crime dataset from Dropbox and place it in the `/data/` subdirectory:
 - [Download london_street_with_city.pkl](https://www.dropbox.com/scl/fi/bl7omot3qr6mx9q2p6phy/london_street_with_city.pkl?rlkey=3p2hut7v0k25qhtijkwkol93c&st=13hupa6u&dl=0)
 
-This is only necessary to get the final `result_df.csv` file, to avoid downloading, it already exists in `/final_result_df/` folder, and can be used right away. 
+This is only necessary to get the final `result_df.csv` file. To avoid downloading, it already exists in `/final_result_df/` folder, and can be used right away. 
 
 Ensure the following files are in the `/data/` subdirectory:
 - `london_street_with_city.pkl`
