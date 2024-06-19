@@ -1,16 +1,16 @@
- Underreporting Project
+# Underreporting Project
 ---
 
 ---
 ## User Instructions
 
-
+Run pip install -r requirements.txt
 
 Create ``/data/`` subdirectory, to keep data files
 
 Download combined street-level crime dataset ``london_street_with_city.pkl`` from the dropbox link
-
 Dropbox link: https://www.dropbox.com/scl/fi/bl7omot3qr6mx9q2p6phy/london_street_with_city.pkl?rlkey=3p2hut7v0k25qhtijkwkol93c&st=13hupa6u&dl=0
+(It is necessary for the final result_df.csv, which also exists in ``/final_result_df/`` folder)
 
 Ensure that you have the following files in the ``/data/`` subdirectory:
 - ``london_street_with_city.pkl`` 
@@ -30,3 +30,5 @@ Run the following ``.py`` files to create the necessary datasets
 
 Run the ``DC2_analysis.R`` file in RStudio using the ``result_df.pkl`` file to run the analysis. Change the file path to where ``result_df.pkl`` is saved on your computer. 
 Ctrl + A then Ctrl+ Enter. Click "No" on the pop-up box after running. The last 3 outputs are the 3 respectives model's summaries
+
+For graphs in presentation, run ``EDA_presentation_graphs.ipynb``
