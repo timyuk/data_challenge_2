@@ -47,7 +47,9 @@ Run the following Python scripts and Jupyter notebooks to process the data:
     python PAS_cleaning.py
     ```
     This script cleans the detailed PAS data and generates `PAS_detailed2_fixed_borough.pkl`.
-
+    
+    By default, it uses .json files stored in `/instead_of_api/` folder, but the same output can be achieved with uncommenting line 243 and commenting out line 242 in the `PAS_cleaning.py`
+    
 3. **Calculate Underreporting Metric**
     Open and run the `crime_underreporting.ipynb` notebook. This notebook uses `PAS_detailed2_fixed_borough.pkl` to derive the underreporting metric and creates `PAS_underreporting.pkl`.
 
