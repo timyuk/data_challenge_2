@@ -6,7 +6,7 @@
 
 
 
-Combine the street-level crime dataset.
+Create ``/data/`` subdirectory, to keep data files
 
 Download combined street-level crime dataset ``london_street_with_city.pkl`` from the dropbox link
 
