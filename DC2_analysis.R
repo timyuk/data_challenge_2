@@ -8,7 +8,9 @@ library(ggcorrplot) ## for corr plots w/ labels
 library(car) ## to test for multicollinearity
 
 pd <- import("pandas")
-df <- pd$read_pickle("C:/Users/20223084/Documents/data_challenge_2/result_df.pkl") #pickle data
+
+#write your path
+df <- pd$read_csv("path/to/result_df.csv") #csv data
 
 
 ## Data type conversions (data cleaning)
@@ -60,7 +62,7 @@ pdata <- pdata.frame(df, index = c("Borough", "Year.Month"))
 # No mulitcollinearity, keep everything (hoorayyy)
 testmodel <- lm(Trust.MPS ~ ., data=pdata)
 ld.vars <- attributes(alias(testmodel)$Complete)$dimnames[[1]]
-vif(testmodel)
+#vif(testmodel)
 
 
 ## Perform the F-Test to compare Pooled OLS and LSDV
