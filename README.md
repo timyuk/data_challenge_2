@@ -12,7 +12,7 @@ Download combined street-level crime dataset ``london_street_with_city.pkl`` fro
 
 Dropbox link: https://www.dropbox.com/scl/fi/bl7omot3qr6mx9q2p6phy/london_street_with_city.pkl?rlkey=3p2hut7v0k25qhtijkwkol93c&st=13hupa6u&dl=0
 
-Ensure that you have the following files in the ``/crime_data/`` subdirectory:
+Ensure that you have the following files in the ``/data/`` subdirectory:
 - ``london_street_with_city.pkl`` 
 - ``PAS_T&Cdashboard_to Q3 23-24.xlsx`` or same file but renamed to ``PAS.xlsx``
 -  the needed ward level PAS files to merge:

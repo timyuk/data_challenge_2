@@ -13,7 +13,7 @@ PAS_detailed_names = ['PAS_ward_level_FY_15_17.csv', 'PAS_ward_level_FY_17_18.cs
 # CREATE merged_PAS file of detailed
 def create_merged_PAS():
     """Creates merged PAS file of detailed PAS data"""
-    directory = r'crime_data/'  # Replace with your directory path
+    directory = r'data/'  # Replace with your directory path
     dfs = []
     check_which_missing = PAS_detailed_names.copy()
     for filename in os.listdir(directory):
@@ -28,7 +28,7 @@ def create_merged_PAS():
     merged_df = pd.concat(dfs, ignore_index=True)
 
     # Save the merged DataFrame to a PKL file
-    output_file = r'crime_data/merged_PAS.pkl'
+    output_file = r'data/merged_PAS.pkl'
     merged_df.to_pickle(output_file)
     print(f"Merged DataFrame saved to {output_file}")
 
@@ -178,7 +178,7 @@ def get_questions(df_new, df_stats):
 
 # Save cleaned file as a pickle file
 try:
-    og_data = pd.read_pickle(r'crime_data\merged_PAS.pkl')
+    og_data = pd.read_pickle(r'data\merged_PAS.pkl')
 except FileNotFoundError:
     print('File "merged_PAS.pkl" was not found, uncomment line 32 to create this file')
     sys.exit(1)
@@ -236,11 +236,11 @@ def fix_boroughs_without_api(PAS_detailed):
 # Save cleaned file as a pickle file
 # df_fin = fix_boroughs(df_og)
 df_fin = fix_boroughs_without_api(df_og)
-df_og.to_pickle(r"crime_data\PAS_detailed2_fixed_borough.pkl")
+df_og.to_pickle(r"data\PAS_detailed2_fixed_borough.pkl")
 
 # # MEASURES DATAFRAME
 # # Load and create dataframes with preprocessing
-# df = pd.read_pickle(r'crime_data\PAS_detailed2.pkl')
+# df = pd.read_pickle(r'data\PAS_detailed2.pkl')
 #
 # # Ward-level PAS data
 # df_measures = df[["Year-Month", "Borough", "ward_n", "Q62A", "Q62E", "Q62TG", "Q62C", "Q60", "Q131", "NQ135BD",
@@ -326,4 +326,4 @@ df_og.to_pickle(r"crime_data\PAS_detailed2_fixed_borough.pkl")
 # })
 #
 # # # Save cleaned file as a pickle file
-# # result_df.to_pickle(r"crime_data\PAS_ward.pkl")
+# # result_df.to_pickle(r"data\PAS_ward.pkl")

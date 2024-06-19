@@ -3,7 +3,7 @@ import os
 
 PAS_initinal_names = ['PAS_T&Cdashboard_to Q3 23-24.xlsx', 'PAS.xlsx']
 def convert_PAS_to_pkl():
-    directory = r'crime_data/'
+    directory = r'data/'
     for filename in os.listdir(directory):
         if filename in PAS_initinal_names:
             print("File found, it will take some time")
